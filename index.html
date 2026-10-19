@@ -1,0 +1,1067 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#090d18">
+<title>HandTrackingAI AR Studio</title>
+<style>
+:root {
+  color-scheme: dark;
+  --bg:#090d18; --panel:#111827; --panel2:#151f31; --line:#29354c;
+  --text:#f4f7ff; --muted:#97a5bd; --accent:#8064ff; --cyan:#50e5f2;
+  --pink:#ff70df; --green:#54e2a0; --red:#ff647c; --radius:18px;
+}
+* { box-sizing:border-box }
+html { scroll-behavior:smooth }
+body {
+  margin:0; color:var(--text); min-height:100vh;
+  background:radial-gradient(ellipse at 12% 0%,#211747 0,transparent 39%),
+             radial-gradient(ellipse at 100% 16%,#102b43 0,transparent 35%),var(--bg);
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+button,select,input { font:inherit }
+button { cursor:pointer }
+button:disabled { opacity:.43; cursor:not-allowed; transform:none!important }
+button:focus-visible,select:focus-visible,input:focus-visible { outline:2px solid var(--cyan);outline-offset:2px }
+.shell { max-width:1600px; padding:22px; margin:auto }
+.topbar { display:flex;align-items:center;justify-content:space-between;gap:15px;margin-bottom:20px }
+.brand { display:flex;align-items:center;gap:13px;min-width:0 }
+.logo { width:50px;height:50px;display:grid;place-items:center;border-radius:16px;
+ background:linear-gradient(135deg,var(--accent),#18bfd4);font-size:27px;box-shadow:0 8px 32px #6752ff40;flex:none }
+h1,h2,h3,p { margin-top:0 }
+h1 { margin-bottom:4px;font-size:clamp(22px,3vw,31px);letter-spacing:-.8px }
+.subtitle { color:var(--muted);font-size:11px;letter-spacing:1.25px }
+.top-actions { display:flex;gap:8px;align-items:center }
+.chip { display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:99px;
+ padding:9px 12px;color:var(--muted);font-size:11px;background:#0d1422aa;white-space:nowrap }
+.dot { width:8px;height:8px;border-radius:50%;background:#6b7890;display:inline-block;flex:none }
+.dot.live { background:var(--green);box-shadow:0 0 12px #54e2a0b0 }
+.layout { display:grid;grid-template-columns:minmax(0,1.7fr) minmax(310px,.83fr);gap:18px;align-items:start }
+.card { min-width:0;background:linear-gradient(155deg,#141d2d,#101624);border:1px solid var(--line);
+ border-radius:var(--radius);overflow:hidden;box-shadow:0 18px 55px #0004 }
+.card-head { display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 19px;border-bottom:1px solid var(--line) }
+.card-head h2 { margin:0;font-size:15px;letter-spacing:.1px }
+.muted { color:var(--muted) }.small { font-size:11px }
+.stage { position:relative;aspect-ratio:16/10;min-height:320px;background:#050811;overflow:hidden }
+#cameraVideo { display:none }
+#viewCanvas { width:100%;height:100%;display:block;object-fit:contain }
+.stage-empty { position:absolute;inset:0;display:grid;align-content:center;justify-items:center;text-align:center;padding:24px;
+ background:radial-gradient(ellipse at center,#171c38 0,#070a12 72%) }
+.stage-empty .emoji { font-size:54px;margin-bottom:12px }
+.stage-empty strong { font-size:20px;margin-bottom:8px }
+.stage-empty span { max-width:380px;color:var(--muted);font-size:13px;line-height:1.65 }
+.stage-tag { position:absolute;top:12px;left:12px;display:flex;align-items:center;gap:8px;padding:8px 10px;
+ border:1px solid #ffffff20;border-radius:10px;background:#070b16d9;font-size:10px;backdrop-filter:blur(10px) }
+.stage-tag.right { left:auto;right:12px }
+.stage-bottom { position:absolute;bottom:12px;left:12px;right:12px;display:flex;justify-content:space-between;gap:8px;pointer-events:none }
+.stage-bottom span { background:#070b16d9;border:1px solid #ffffff20;border-radius:9px;padding:7px 9px;font-size:10px }
+.toolbar { display:flex;flex-wrap:wrap;gap:8px;padding:13px 16px;border-top:1px solid var(--line) }
+.btn { border:1px solid var(--line);background:#1a2436;color:var(--text);padding:10px 13px;border-radius:11px;
+ font-weight:750;font-size:12px;transition:transform .15s,border-color .15s }
+.btn:hover:not(:disabled) { transform:translateY(-1px);border-color:#7585ad }
+.btn.primary { border-color:transparent;background:linear-gradient(135deg,#8064ff,#5976ff) }
+.btn.success { border-color:#285b4b;background:#10291f;color:#8cf1c1 }
+.btn.danger { border-color:#5c2938;background:#2a1723;color:#ff9eae }
+.stats { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;padding:0 16px 16px }
+.stat { background:#0c1321;border:1px solid var(--line);border-radius:13px;padding:12px;min-width:0 }
+.stat-label { color:var(--muted);font-size:10px;letter-spacing:.55px;margin-bottom:6px }
+.stat-value { font-size:23px;font-weight:800;letter-spacing:-.7px;white-space:nowrap }
+.stat-value small { color:var(--muted);font-size:10px;font-weight:500;letter-spacing:0 }
+.side { display:grid;gap:16px }
+.controls { display:grid;gap:14px;padding:17px }
+.field { display:grid;gap:7px }
+.field label,.field-title { display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;font-weight:700;color:#dce4f5 }
+select { width:100%;min-width:0;border:1px solid var(--line);border-radius:10px;background:#0c1321;color:var(--text);padding:11px 12px }
+input[type=range] { width:100%;accent-color:var(--accent) }
+input[type=checkbox] { width:17px;height:17px;accent-color:var(--accent) }
+.range-meta { display:flex;justify-content:space-between;color:var(--muted);font-size:10px }
+.toggle-row { display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid #27334a80;font-size:12px;color:#d7e0f2 }
+.toggle-row:last-child { border-bottom:0 }
+.hand-list { padding:13px 16px 16px;display:grid;gap:8px }
+.hand-item { display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--line);border-radius:12px;padding:10px;background:#0c1321;font-size:12px }
+.hand-left { display:flex;align-items:center;gap:10px;min-width:0 }
+.hand-icon { width:32px;height:32px;display:grid;place-items:center;background:#29224d;border-radius:9px;font-size:18px;flex:none }
+.hand-name { font-weight:700 }
+.hand-detail { color:var(--muted);font-size:10px;margin-top:4px;line-height:1.5 }
+.hand-score { color:var(--green);font-size:10px;white-space:nowrap }
+.notice { display:none;margin:0 16px 16px;padding:12px 13px;border-radius:11px;border:1px solid #5a452a;background:#271e13;color:#ffd79a;font-size:12px;line-height:1.55;overflow-wrap:anywhere }
+.notice.show { display:block }.notice.error { border-color:#6b2c3b;background:#2b1420;color:#ffb0bc }.notice.ok { border-color:#285b4b;background:#10291f;color:#9af3c8 }
+.section-label { color:var(--muted);font-size:10px;letter-spacing:1.2px;font-weight:800;margin:2px 0 -4px }
+.hint-list { display:grid;gap:10px;padding:16px }
+.hint { color:var(--muted);font-size:11px;line-height:1.6 }
+.gesture-guide { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:14px 16px 16px }
+.gesture-card { display:flex;align-items:center;gap:9px;padding:10px;border:1px solid var(--line);border-radius:11px;background:#0c1321;min-width:0 }
+.gesture-icon { font-size:23px;flex:none }
+.gesture-title { font-size:11px;font-weight:750 }
+.gesture-desc { font-size:10px;color:var(--muted);margin-top:3px;line-height:1.4 }
+.history { display:grid;gap:7px;padding:0 16px 16px }
+.history-item { display:flex;justify-content:space-between;gap:10px;font-size:10px;color:var(--muted);padding:8px 10px;border-radius:9px;background:#0c1321 }
+.footer { text-align:center;color:#74819a;font-size:11px;line-height:1.7;padding:18px 3px 4px }
+kbd { border:1px solid #3b4860;border-radius:5px;background:#0b1120;padding:2px 5px;color:#dce6ff;font-size:10px }
+.hidden { display:none!important }
+@media(max-width:1000px) { .layout{grid-template-columns:1fr}.side{grid-template-columns:repeat(2,minmax(0,1fr))}.side .card:first-child{grid-row:span 2} }
+@media(max-width:650px) {
+ .shell{padding:12px}.topbar{align-items:flex-start}.top-actions .chip{display:none}
+ .layout{gap:13px}.side{grid-template-columns:1fr}.side .card:first-child{grid-row:auto}
+ .stage{aspect-ratio:4/3;min-height:245px}.stats{grid-template-columns:repeat(2,minmax(0,1fr));padding:0 10px 10px;gap:6px}
+ .stat{padding:9px}.stat-value{font-size:20px}.toolbar{padding:10px}.btn{flex:1}.card-head{padding:14px}.controls{padding:14px}
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">✋</div>
+      <div><h1>HandTrackingAI AR Studio</h1><div class="subtitle">HAND GESTURES • FACE MESH • LIVE EFFECTS</div></div>
+    </div>
+    <div class="top-actions">
+      <div class="chip"><span class="dot" id="headerDot"></span><span id="headerStatus">Kamera belum aktif</span></div>
+      <div class="chip">✦ AR Gesture Studio</div>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="card">
+      <div class="card-head"><h2>Live AR Camera</h2><span class="muted small" id="modelStatus">Siap memulai</span></div>
+      <div class="stage">
+        <video id="cameraVideo" playsinline muted></video>
+        <canvas id="viewCanvas" aria-label="Kamera dengan efek AR berbasis gestur"></canvas>
+        <div class="stage-empty" id="emptyState">
+          <div class="emoji">🖐️</div><strong>Coba efek dengan gestur tangan</strong>
+          <span>Tekan Aktifkan Kamera. Buka kedua telapak di samping wajah untuk memunculkan face mesh putih seperti contoh.</span>
+        </div>
+        <div class="stage-tag"><span class="dot" id="stageDot"></span><span id="stageStatus">STANDBY</span></div>
+        <div class="stage-tag right">AR VISION <span style="color:var(--cyan)">●</span></div>
+        <div class="stage-bottom"><span id="gestureOverlay">GESTURE: BELUM ADA</span><span id="resolutionLabel">— × —</span></div>
+      </div>
+      <div class="toolbar">
+        <button class="btn primary" id="startBtn">▶ Aktifkan Kamera</button>
+        <button class="btn" id="stopBtn" disabled>■ Matikan</button>
+        <button class="btn" id="photoBtn" disabled>📸 Foto</button>
+        <button class="btn" id="recordBtn" disabled>● Rekam</button>
+        <button class="btn danger" id="saveVideoBtn" disabled>↓ Simpan Video</button>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="stat-label">FPS TAMPILAN</div><div class="stat-value" id="fpsValue">0<small> fps</small></div></div>
+        <div class="stat"><div class="stat-label">TANGAN</div><div class="stat-value" id="handCount">0<small> / 2</small></div></div>
+        <div class="stat"><div class="stat-label">FACE</div><div class="stat-value" id="faceCount">0<small> / 1</small></div></div>
+        <div class="stat"><div class="stat-label">CONFIDENCE</div><div class="stat-value" id="qualityValue">—<small> %</small></div></div>
+      </div>
+      <div class="notice" id="notice" role="status" aria-live="polite"></div>
+      <div class="card-head"><h2>Aktivitas Terbaru</h2><button class="btn" id="clearHistoryBtn">Bersihkan</button></div>
+      <div class="history" id="history"><div class="history-item"><span>Belum ada aktivitas</span><span>—</span></div></div>
+    </section>
+
+    <aside class="side">
+      <section class="card">
+        <div class="card-head"><h2>Gesture & Efek</h2><span class="muted small">01 / AR SETUP</span></div>
+        <div class="controls">
+          <div class="field"><label for="gestureMode">Mode efek</label><select id="gestureMode">
+            <option value="auto">Otomatis mengikuti gestur</option>
+            <option value="manual">Efek manual terus aktif</option>
+            <option value="off">Overlay gestur mati</option>
+          </select></div>
+          <div class="field"><label for="filterSelect">Filter warna kamera</label><select id="filterSelect">
+            <option value="none">Normal</option><option value="grayscale">Grayscale</option><option value="sepia">Sepia</option>
+            <option value="vintage">Vintage</option><option value="cool">Cool Blue</option><option value="warm">Warm Glow</option>
+            <option value="invert">Negative</option><option value="contrast">High Contrast</option><option value="neon">Cyber Tint</option>
+          </select></div>
+          <div class="field"><label for="manualEffect">Efek manual</label><select id="manualEffect">
+            <option value="face">Face Mesh + Frame</option><option value="skeleton">Skeleton Neon</option>
+            <option value="stars">Star Points</option><option value="trail">Motion Trail</option>
+            <option value="scanner">Scanner HUD</option><option value="particles">Floating Particles</option>
+            <option value="none">Tanpa overlay</option>
+          </select></div>
+          <div class="field"><label for="faceStyle">Gaya overlay wajah</label><select id="faceStyle">
+            <option value="wireframe">Wireframe putih (seperti contoh)</option>
+            <option value="hologram">Hologram cyan</option>
+            <option value="scanner">Scanner futuristik</option>
+            <option value="contour">Kontur wajah saja</option>
+          </select></div>
+          <div class="field"><label for="cameraSelect">Perangkat kamera</label><select id="cameraSelect"><option value="">Kamera default</option></select></div>
+          <div class="field"><label for="resolutionSelect">Resolusi</label><select id="resolutionSelect">
+            <option value="640x480">640 × 480 (lebih ringan)</option><option value="1280x720">1280 × 720 (HD)</option><option value="1920x1080">1920 × 1080 (Full HD)</option>
+          </select></div>
+          <div class="field"><div class="field-title"><label for="smoothRange">Stabilisasi tracking</label><span id="smoothLabel">45%</span></div><input id="smoothRange" type="range" min="0" max="90" value="45"><div class="range-meta"><span>Responsif</span><span>Lebih halus</span></div></div>
+          <div class="field"><div class="field-title"><label for="confidenceRange">Ambang deteksi</label><span id="confidenceLabel">55%</span></div><input id="confidenceRange" type="range" min="20" max="90" value="55"><div class="range-meta"><span>Lebih sensitif</span><span>Lebih selektif</span></div></div>
+          <div class="field"><div class="field-title"><label for="trailRange">Panjang jejak</label><span id="trailLabel">12</span></div><input id="trailRange" type="range" min="0" max="30" value="12"></div>
+          <div class="section-label">TAMPILAN & KONTROL</div>
+          <div>
+            <div class="toggle-row"><span>Mirror kamera</span><input type="checkbox" id="mirrorToggle" checked></div>
+            <div class="toggle-row"><span>Face mesh saat dua telapak terbuka</span><input type="checkbox" id="faceGestureToggle" checked></div>
+            <div class="toggle-row"><span>Landmark tangan</span><input type="checkbox" id="landmarkToggle" checked></div>
+            <div class="toggle-row"><span>Label gestur</span><input type="checkbox" id="labelToggle" checked></div>
+            <div class="toggle-row"><span>Garis pengarah</span><input type="checkbox" id="guideToggle"></div>
+            <div class="toggle-row"><span>Glow / neon</span><input type="checkbox" id="glowToggle" checked></div>
+          </div>
+          <button class="btn" id="resetSettingsBtn">↺ Reset Pengaturan</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head"><h2>Cara Memunculkan Filter</h2><span class="muted small">02 / GESTURES</span></div>
+        <div class="gesture-guide">
+          <div class="gesture-card"><div class="gesture-icon">👐</div><div><div class="gesture-title">Dua telapak terbuka</div><div class="gesture-desc">Letakkan di kiri dan kanan wajah → face mesh + bingkai putih.</div></div></div>
+          <div class="gesture-card"><div class="gesture-icon">🤏</div><div><div class="gesture-title">Pinch / cubit</div><div class="gesture-desc">Sentuhkan ibu jari dan telunjuk → bingkai AR di sekitar tangan.</div></div></div>
+          <div class="gesture-card"><div class="gesture-icon">✌️</div><div><div class="gesture-title">Peace sign</div><div class="gesture-desc">Telunjuk + jari tengah terbuka → neon dan jejak cahaya.</div></div></div>
+          <div class="gesture-card"><div class="gesture-icon">✊</div><div><div class="gesture-title">Kepalan tangan</div><div class="gesture-desc">Jari terlipat → gelombang scanner berdenyut.</div></div></div>
+          <div class="gesture-card"><div class="gesture-icon">👍</div><div><div class="gesture-title">Jempol naik</div><div class="gesture-desc">Jari lain menekuk, ibu jari naik → partikel bintang.</div></div></div>
+          <div class="gesture-card"><div class="gesture-icon">🖐️</div><div><div class="gesture-title">Satu telapak terbuka</div><div class="gesture-desc">Telapak terlihat penuh → HUD radar di sekitar tangan.</div></div></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-head"><h2>Analitik Tangan</h2><span class="muted small">03 / LIVE DATA</span></div>
+        <div class="hand-list" id="handList"><div class="hand-item"><div class="hand-left"><div class="hand-icon">✋</div><div><div class="hand-name">Belum ada data</div><div class="hand-detail">Aktifkan kamera untuk mulai</div></div></div><span class="hand-score">IDLE</span></div></div>
+      </section>
+      <section class="card">
+        <div class="card-head"><h2>Tools & Bantuan</h2><span class="muted small">04 / TOOLS</span></div>
+        <div class="controls">
+          <button class="btn" id="fullscreenBtn">⛶ Layar Penuh</button>
+          <button class="btn" id="snapshotBtn" disabled>↓ Unduh Foto Terakhir</button>
+          <button class="btn" id="exportCsvBtn">▤ Ekspor Riwayat CSV</button>
+          <button class="btn" id="helpBtn">? Tampilkan bantuan</button>
+          <div class="hint">Shortcut: <kbd>Space</kbd> kamera · <kbd>P</kbd> foto · <kbd>R</kbd> rekam · <kbd>F</kbd> layar penuh.</div>
+          <div class="hint">Kamera diproses di browser. Koneksi internet dibutuhkan untuk memuat MediaPipe dari CDN.</div>
+        </div>
+      </section>
+    </aside>
+  </main>
+  <footer class="footer">HANDTRACKINGAI AR STUDIO • Satu file HTML • Kamera memerlukan HTTPS / localhost dan izin dari pengguna.</footer>
+</div>
+
+<!--
+  Library eksternal untuk deteksi tangan dan wajah. Semua kode aplikasi,
+  layout, styling, gestur, filter, animasi, foto, serta video berada dalam
+  file index.html ini. CDN diperlukan untuk mengunduh model AI.
+-->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/face_mesh.js" crossorigin="anonymous"></script>
+<script>
+"use strict";
+
+/* ============================================================
+   1. APP STATE
+   ============================================================ */
+const $ = (id) => document.getElementById(id);
+const video = $("cameraVideo");
+const canvas = $("viewCanvas");
+const ctx = canvas.getContext("2d", { alpha:false, desynchronized:true });
+const state = {
+  running:false, starting:false, stream:null, handsModel:null, faceModel:null,
+  raf:0, inferenceBusy:false, nextInferenceAt:0, lastFaceInferAt:0, faceInterval:105,
+  handResults:null, faceResults:null, processedHands:[], smooth:[], trails:[], particles:[],
+  recorder:null, recording:false, recorderStream:null, chunks:[], lastVideoUrl:null,
+  lastPhoto:null, history:[], devices:[], lastHandCount:-1, lastGesture:"",
+  frameCount:0, fpsStart:performance.now(), fps:0, processMs:0,
+  candidateGesture:"", candidateGestureAt:0, stableGestureMode:"none",
+  modelHandsReady:false, modelFaceReady:false, errorTimes:[], lastGestureChange:0
+};
+const COLORS = ["#55eaff","#ff72df","#a8ff70","#ffd36c"];
+const CONNECTIONS = [
+  [0,1],[1,2],[2,3],[3,4],
+  [0,5],[5,6],[6,7],[7,8],
+  [5,9],[9,10],[10,11],[11,12],
+  [9,13],[13,14],[14,15],[15,16],
+  [13,17],[17,18],[18,19],[19,20],[0,17]
+];
+const TIPS = [4,8,12,16,20];
+const PIPS = [3,6,10,14,18];
+const DEFAULTS = {
+  gestureMode:"auto",filterSelect:"none",manualEffect:"face",faceStyle:"wireframe",resolutionSelect:"640x480",
+  mirrorToggle:true,faceGestureToggle:true,landmarkToggle:true,labelToggle:true,guideToggle:false,glowToggle:true,
+  smoothRange:45,confidenceRange:55,trailRange:12
+};
+
+/* ============================================================
+   2. UI STATUS, NOTICES, AND ACTIVITY HISTORY
+   ============================================================ */
+function notify(message, kind="info", duration=0) {
+  const el=$("notice");
+  el.textContent=message;
+  el.className="notice show"+(kind==="error"?" error":kind==="ok"?" ok":"");
+  if(duration) setTimeout(()=>el.classList.remove("show"),duration);
+}
+function clearNotice(){ $("notice").className="notice";$("notice").textContent=""; }
+function status(active,text){
+  $("headerDot").classList.toggle("live",active);
+  $("stageDot").classList.toggle("live",active);
+  $("headerStatus").textContent=text;
+  $("stageStatus").textContent=active?"TRACKING AKTIF":"STANDBY";
+}
+function addHistory(message,value="OK"){
+  state.history.unshift({time:new Date(),message,value});
+  state.history=state.history.slice(0,12);
+  renderHistory();
+}
+function renderHistory(){
+  const host=$("history");
+  if(!state.history.length){
+    host.innerHTML='<div class="history-item"><span>Belum ada aktivitas</span><span>—</span></div>';
+    return;
+  }
+  host.replaceChildren(...state.history.map(row=>{
+    const el=document.createElement("div");el.className="history-item";
+    const a=document.createElement("span"),b=document.createElement("span");
+    a.textContent=row.message;b.textContent=`${row.time.toLocaleTimeString()} · ${row.value}`;
+    el.append(a,b);return el;
+  }));
+}
+function showEmpty(show){ $("emptyState").classList.toggle("hidden",!show); }
+function buttons(active){
+  $("startBtn").disabled=active||state.starting;
+  $("stopBtn").disabled=!active;
+  $("photoBtn").disabled=!active;
+  $("recordBtn").disabled=!active;
+  $("cameraSelect").disabled=active;
+  $("resolutionSelect").disabled=active;
+}
+function updateRangeLabels(){
+  $("smoothLabel").textContent=$("smoothRange").value+"%";
+  $("confidenceLabel").textContent=$("confidenceRange").value+"%";
+  $("trailLabel").textContent=$("trailRange").value;
+}
+
+/* ============================================================
+   3. CAMERA ENUMERATION, CONSTRAINTS, AND LIFECYCLE
+   ============================================================ */
+async function enumerateCameras(){
+  try{
+    if(!navigator.mediaDevices?.enumerateDevices)return;
+    const devices=(await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==="videoinput");
+    state.devices=devices;
+    const select=$("cameraSelect"),old=select.value;
+    select.replaceChildren(new Option("Kamera default",""));
+    devices.forEach((device,index)=>select.add(new Option(device.label||`Kamera ${index+1}`,device.deviceId)));
+    if(old&&[...select.options].some(o=>o.value===old))select.value=old;
+  }catch(error){console.warn("Enumerasi kamera gagal",error);}
+}
+function getCameraConstraints(){
+  const [width,height]=$("resolutionSelect").value.split("x").map(Number);
+  const videoOptions={width:{ideal:width},height:{ideal:height},frameRate:{ideal:30,max:60}};
+  const deviceId=$("cameraSelect").value;
+  if(deviceId)videoOptions.deviceId={exact:deviceId};else videoOptions.facingMode="user";
+  return {audio:false,video:videoOptions};
+}
+function cameraError(error){
+  if(!window.isSecureContext)return "Kamera browser hanya bisa digunakan pada HTTPS atau localhost.";
+  if(["NotAllowedError","PermissionDeniedError"].includes(error?.name))return "Izin kamera ditolak. Klik ikon gembok di address bar → Camera → Allow, kemudian muat ulang halaman.";
+  if(["NotFoundError","DevicesNotFoundError"].includes(error?.name))return "Kamera tidak ditemukan. Periksa koneksi webcam atau kamera laptop.";
+  if(["NotReadableError","TrackStartError"].includes(error?.name))return "Kamera sedang dipakai aplikasi lain. Tutup aplikasi kamera, Zoom, OBS, atau Discord lalu coba lagi.";
+  if(error?.name==="OverconstrainedError")return "Resolusi tidak tersedia. Coba pilih 640 × 480.";
+  return "Kamera gagal dimulai: "+(error?.message||error?.name||"kesalahan tidak diketahui");
+}
+function waitForVideo(){
+  return new Promise((resolve,reject)=>{
+    if(video.readyState>=2&&video.videoWidth>0)return resolve();
+    const timeout=setTimeout(()=>reject(new Error("Kamera tidak mengirim frame dalam 10 detik.")),12000);
+    const ready=()=>{if(video.readyState>=2&&video.videoWidth>0){clearTimeout(timeout);video.removeEventListener("loadeddata",ready);resolve();}};
+    video.addEventListener("loadeddata",ready);
+  });
+}
+async function startCamera(){
+  if(state.running||state.starting)return;
+  clearNotice();
+  if(!navigator.mediaDevices?.getUserMedia){notify("Browser tidak mendukung kamera. Gunakan Chrome atau Edge terbaru melalui HTTPS.","error");return;}
+  if(typeof window.Hands!=="function"){notify("Library MediaPipe Hands belum termuat. Pastikan internet aktif dan CDN tidak diblokir, kemudian refresh halaman.","error");return;}
+  state.starting=true;buttons(false);$("modelStatus").textContent="Membuka kamera…";
+  notify("Izinkan akses kamera pada popup browser. Model AI sedang disiapkan.");
+  try{
+    state.stream=await navigator.mediaDevices.getUserMedia(getCameraConstraints());
+    video.srcObject=state.stream;
+    await video.play();
+    await waitForVideo();
+    await enumerateCameras();
+    await createModels();
+    const settings=state.stream.getVideoTracks()[0]?.getSettings?.()||{};
+    canvas.width=settings.width||video.videoWidth||640;
+    canvas.height=settings.height||video.videoHeight||480;
+    $("resolutionLabel").textContent=`${canvas.width} × ${canvas.height}`;
+    state.running=true;state.starting=false;state.nextInferenceAt=0;state.lastFaceInferAt=0;
+    state.fpsStart=performance.now();state.frameCount=0;state.smooth=[];state.trails=[];state.particles=[];
+    state.handResults=null;state.faceResults=null;state.processedHands=[];state.lastHandCount=-1;
+    state.candidateGesture="";state.candidateGestureAt=0;state.stableGestureMode="none";
+    showEmpty(false);buttons(true);status(true,"Kamera aktif");
+    $("modelStatus").textContent="Model tangan & wajah siap";
+    clearNotice();addHistory("Kamera diaktifkan",`${canvas.width}×${canvas.height}`);
+    state.raf=requestAnimationFrame(renderLoop);
+    const track=state.stream.getVideoTracks()[0];
+    track.addEventListener("ended",()=>{if(state.running)stopCamera();});
+  }catch(error){
+    console.error("camera start error",error);
+    await releaseCamera(false);
+    state.starting=false;buttons(false);$("modelStatus").textContent="Gagal memulai";
+    notify(cameraError(error),"error");
+  }
+}
+async function stopCamera(){await releaseCamera(true);}
+async function releaseCamera(log=true){
+  state.running=false;state.starting=false;
+  if(state.raf)cancelAnimationFrame(state.raf);state.raf=0;
+  if(state.recording)stopRecording();
+  if(state.stream){state.stream.getTracks().forEach(track=>{try{track.stop();}catch(_){}});}
+  state.stream=null;video.pause();video.srcObject=null;
+  state.processedHands=[];state.handResults=null;state.faceResults=null;state.smooth=[];state.trails=[];state.particles=[];
+  buttons(false);status(false,"Kamera belum aktif");showEmpty(true);
+  $("fpsValue").innerHTML='0<small> fps</small>';
+  $("handCount").innerHTML='0<small> / 2</small>';
+  $("faceCount").innerHTML='0<small> / 1</small>';
+  $("qualityValue").innerHTML='—<small> %</small>';
+  $("gestureOverlay").textContent="GESTURE: BELUM ADA";
+  $("handList").innerHTML='<div class="hand-item"><div class="hand-left"><div class="hand-icon">✋</div><div><div class="hand-name">Belum ada data</div><div class="hand-detail">Aktifkan kamera untuk mulai</div></div></div><span class="hand-score">IDLE</span></div>';
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  if(log){addHistory("Kamera dimatikan","STOP");clearNotice();}
+}
+
+/* ============================================================
+   4. AI MODEL INITIALIZATION: HANDS + FACEMESH
+   ============================================================ */
+async function createModels(){
+  $("modelStatus").textContent="Memuat model tangan…";
+  if(!state.handsModel){
+    const hands=new window.Hands({locateFile:file=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${file}`});
+    const confidence=Number($("confidenceRange").value)/100;
+    hands.setOptions({maxNumHands:2,modelComplexity:1,minDetectionConfidence:confidence,minTrackingConfidence:Math.max(.25,confidence)});
+    hands.onResults(results=>{
+      state.handResults=results;
+      const raw=results.multiHandLandmarks||[];
+      const handed=results.multiHandedness||[];
+      if(raw.length!==state.processedHands.length)state.smooth=state.smooth.slice(0,raw.length);
+      state.processedHands=raw.map((points,index)=>{
+        const smoothed=smoothLandmarks(points,index);
+        const category=handed[index]?.classification?.[0]||{};
+        return {
+          points:smoothed,
+          raw:points,
+          name:category.label||`Tangan ${index+1}`,
+          score:category.score??.8,
+          gesture:classifyGesture(smoothed)
+        };
+      });
+      if(!raw.length)state.smooth=[];
+    });
+    state.handsModel=hands;
+  }
+  if(typeof window.FaceMesh==="function"&&!state.faceModel){
+    $("modelStatus").textContent="Memuat model wajah…";
+    const face=new window.FaceMesh({locateFile:file=>`https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/${file}`});
+    face.setOptions({maxNumFaces:1,refineLandmarks:true,minDetectionConfidence:.5,minTrackingConfidence:.5});
+    face.onResults(results=>{state.faceResults=results;});
+    state.faceModel=face;
+  }
+  state.modelHandsReady=!!state.handsModel;
+  state.modelFaceReady=!!state.faceModel;
+  $("modelStatus").textContent=state.modelFaceReady?"AI tangan + wajah siap":"AI tangan siap; Face Mesh tidak tersedia";
+}
+async function updateModelConfidence(){
+  const confidence=Number($("confidenceRange").value)/100;
+  try{
+    if(state.handsModel)await state.handsModel.setOptions({maxNumHands:2,modelComplexity:1,minDetectionConfidence:confidence,minTrackingConfidence:Math.max(.25,confidence)});
+    state.smooth=[];
+    addHistory("Ambang deteksi diubah",`${Math.round(confidence*100)}%`);
+  }catch(error){console.warn(error);notify("Tidak dapat mengubah ambang saat ini. Coba mulai ulang kamera.","error");}
+}
+
+/* ============================================================
+   5. FILTER COLOR PIPELINE (CANVAS FILTER, TANPA PIXEL LOOP BERAT)
+   ============================================================ */
+function filterCss(){
+  const map={
+    none:"none",grayscale:"grayscale(1)",sepia:"sepia(1)",vintage:"sepia(.72) contrast(1.12) saturate(.8)",
+    cool:"saturate(1.15) hue-rotate(8deg) brightness(1.04)",warm:"sepia(.22) saturate(1.25) brightness(1.04)",
+    invert:"invert(1) hue-rotate(180deg)",contrast:"contrast(1.45) saturate(1.12)",
+    neon:"saturate(1.75) contrast(1.2) hue-rotate(18deg)"
+  };
+  return map[$("filterSelect").value]||"none";
+}
+function drawCameraFrame(){
+  ctx.save();
+  ctx.filter=filterCss();
+  if($("mirrorToggle").checked){ctx.translate(canvas.width,0);ctx.scale(-1,1);}
+  ctx.drawImage(video,0,0,canvas.width,canvas.height);
+  ctx.restore();
+}
+function transformPoint(point){
+  return {x:($("mirrorToggle").checked?1-point.x:point.x)*canvas.width,y:point.y*canvas.height};
+}
+function clamp(value,min,max){return Math.max(min,Math.min(max,value));}
+function dist(a,b){const dx=a.x-b.x,dy=a.y-b.y;return Math.sqrt(dx*dx+dy*dy);}
+
+/* ============================================================
+   6. HAND LANDMARK SMOOTHING + GESTURE RECOGNITION
+   ============================================================ */
+function smoothLandmarks(points,index){
+  const amount=Number($("smoothRange").value)/100;
+  const alpha=1-amount*.88;
+  const previous=state.smooth[index];
+  const output=points.map((p,i)=>{
+    if(!previous?.[i])return {x:p.x,y:p.y,z:p.z||0};
+    return {x:previous[i].x*(1-alpha)+p.x*alpha,y:previous[i].y*(1-alpha)+p.y*alpha,z:(previous[i].z||0)*(1-alpha)+(p.z||0)*alpha};
+  });
+  state.smooth[index]=output;return output;
+}
+function classifyGesture(points){
+  if(!points||points.length<21)return {name:"Tidak diketahui",openPalm:false,pinch:false,peace:false,fist:false,thumbsUp:false};
+  const extended=[];
+  for(let finger=1;finger<=4;finger++){
+    const tip=points[TIPS[finger]],pip=points[PIPS[finger]],wrist=points[0];
+    // Ukur jarak dari pergelangan agar deteksi jari lebih tahan ketika tangan miring.
+    extended.push(dist(tip,wrist) > dist(pip,wrist)*1.08);
+  }
+  const thumbSpan=dist(points[4],points[5]);
+  const thumbOpen=thumbSpan>dist(points[3],points[5])*1.12;
+  const openCount=extended.filter(Boolean).length+(thumbOpen?1:0);
+  const pinch=dist(points[4],points[8])<.065;
+  const peace=extended[0]&&extended[1]&&!extended[2]&&!extended[3];
+  const fist=openCount<=1&&!pinch;
+  const thumbsUp=thumbOpen&&!extended[0]&&!extended[1]&&!extended[2]&&!extended[3]&&points[4].y<points[3].y;
+  const openPalm=openCount>=4;
+  let name=`${openCount} jari terbuka`;
+  if(pinch)name="Pinch / cubit";
+  else if(openPalm)name="Telapak terbuka";
+  else if(peace)name="Peace sign";
+  else if(thumbsUp)name="Jempol naik";
+  else if(fist)name="Kepalan tangan";
+  else if(extended[0]&&!extended[1]&&!extended[2]&&!extended[3])name="Menunjuk";
+  return {name,openPalm,pinch,peace,fist,thumbsUp,openCount};
+}
+function getGestureState(){
+  // Titik smoothing hanya diperbarui ketika model mengirim hasil inferensi baru.
+  // Ini mencegah landmark terus "tertarik" saat canvas menggambar ulang 60 FPS.
+  return state.processedHands || [];
+}
+function chooseActiveGesture(hands){
+  const openHands=hands.filter(h=>h.gesture.openPalm).length;
+  if($("gestureMode").value==="off")return {mode:"off",label:"GESTURE: OFF",openHands};
+  if($("gestureMode").value==="manual")return {mode:$("manualEffect").value,label:"MANUAL: "+$("manualEffect").selectedOptions[0].textContent,openHands};
+  let desired="none";
+  if(openHands>=2&&$("faceGestureToggle").checked)desired="face";
+  else if(hands.some(h=>h.gesture.pinch))desired="pinch";
+  else if(hands.some(h=>h.gesture.peace))desired="peace";
+  else if(hands.some(h=>h.gesture.thumbsUp))desired="thumbs";
+  else if(hands.some(h=>h.gesture.fist))desired="fist";
+  else if(openHands===1)desired="palm";
+
+  // Pose harus bertahan sebentar sebelum mengganti mode supaya overlay tidak berkedip.
+  const now=performance.now();
+  if(desired!==state.candidateGesture){
+    state.candidateGesture=desired;
+    state.candidateGestureAt=now;
+  }
+  if(now-state.candidateGestureAt>=140)state.stableGestureMode=desired;
+  const mode=state.stableGestureMode;
+  const labels={
+    face:"GESTURE: DUA TELAPAK → FACE MESH",
+    pinch:"GESTURE: PINCH → MAGIC FRAME",
+    peace:"GESTURE: PEACE → NEON TRAIL",
+    thumbs:"GESTURE: THUMBS UP → SPARKLES",
+    fist:"GESTURE: FIST → PULSE SCANNER",
+    palm:"GESTURE: OPEN PALM → HAND HUD",
+    none:"GESTURE: TUNJUKKAN POSE TANGAN"
+  };
+  return {mode,label:labels[mode]||"GESTURE: SIAP",openHands};
+}
+
+/* ============================================================
+   7. FACE MESH / FACE CONTOUR RENDERING
+   ============================================================ */
+const FACE_CONNECTIONS = [
+  // Face oval
+  [10,338],[338,297],[297,332],[332,284],[284,251],[251,389],[389,356],[356,454],
+  [454,323],[323,361],[361,288],[288,397],[397,365],[365,379],[379,378],[378,400],
+  [400,377],[377,152],[152,148],[148,176],[176,149],[149,150],[150,136],[136,172],
+  [172,58],[58,132],[132,93],[93,234],[234,127],[127,162],[162,21],[21,54],
+  [54,103],[103,67],[67,109],[109,10],
+  // Left eyebrow/eye
+  [70,63],[63,105],[105,66],[66,107],[107,55],
+  [33,160],[160,158],[158,133],[133,153],[153,144],[144,163],[163,7],[7,33],
+  [246,161],[161,160],[160,159],[159,158],[158,157],[157,173],[173,133],
+  // Right eyebrow/eye
+  [300,293],[293,334],[334,296],[296,336],[336,285],
+  [263,387],[387,385],[385,362],[362,380],[380,373],[373,390],[390,249],[249,263],
+  [466,388],[388,387],[387,386],[386,385],[385,384],[384,398],[398,362],
+  // Nose bridge and nostrils
+  [168,6],[6,197],[197,195],[195,5],[5,4],[4,1],[1,19],[19,94],
+  [94,2],[2,97],[97,98],[98,99],[99,60],[60,75],[75,59],[59,166],
+  // Lips
+  [61,146],[146,91],[91,181],[181,84],[84,17],[17,314],[314,405],[405,321],
+  [321,375],[375,291],[291,308],[308,324],[324,318],[318,402],[402,317],
+  [317,14],[14,87],[87,178],[178,88],[88,95],[95,78],[78,61],
+  [61,185],[185,40],[40,39],[39,37],[37,0],[0,267],[267,269],[269,270],
+  [270,409],[409,291]
+];
+function drawFaceMesh(faceLandmarks, emphasis=true){
+  if(!faceLandmarks?.length)return;
+  const points=faceLandmarks.map(transformPoint);
+  const style=$("faceStyle").value;
+  const color=style==="hologram"?"#50e5f2":style==="scanner"?"#b5ffef":"#f7fbff";
+  ctx.save();
+  ctx.strokeStyle=style==="contour"?"rgba(245,250,255,.85)":(emphasis?color+"bd":color+"60");
+  ctx.lineWidth=style==="contour"?1.5:(emphasis?1:.65);
+  if($("glowToggle").checked){ctx.shadowColor=color;ctx.shadowBlur=emphasis?5:1;}
+
+  // Kontur mata, hidung, bibir, dan oval wajah.
+  FACE_CONNECTIONS.forEach(([a,b])=>{
+    const p=points[a],q=points[b];if(!p||!q)return;
+    ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.stroke();
+  });
+
+  // Library FaceMesh biasanya menyediakan koneksi tessellation.
+  // Pakai satu dari setiap lima edge agar menyerupai mesh teknis tanpa terlalu berat.
+  const tessellation=window.FACEMESH_TESSELATION;
+  if(style!=="contour"&&tessellation&&typeof tessellation[Symbol.iterator]==="function"){
+    ctx.save();
+    ctx.strokeStyle=style==="hologram"?"rgba(80,229,242,.42)":"rgba(255,255,255,.36)";
+    ctx.lineWidth=.55;
+    let count=0;
+    for(const edge of tessellation){
+      if(count++%5!==0)continue;
+      const a=Array.isArray(edge)?edge[0]:edge?.start;
+      const b=Array.isArray(edge)?edge[1]:edge?.end;
+      const p=points[a],q=points[b];
+      if(!p||!q)continue;
+      ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.stroke();
+    }
+    ctx.restore();
+  } else if(emphasis){
+    // Fallback wireframe jika konstanta tessellation tidak diekspor CDN.
+    ctx.save();
+    ctx.strokeStyle=style==="hologram"?"rgba(80,229,242,.28)":"rgba(255,255,255,.25)";
+    ctx.lineWidth=.6;
+    const fallback=[[10,151],[151,9],[9,8],[8,168],[168,6],[6,197],[197,195],[195,5],[5,4],[4,1],
+      [1,19],[19,94],[94,2],[2,164],[164,0],[0,17],[17,314],[314,405],[405,321],[321,375],
+      [33,133],[133,362],[362,263],[33,159],[159,145],[145,133],[263,386],[386,374],[374,362],
+      [70,105],[105,66],[66,107],[300,334],[334,296],[296,336]];
+    fallback.forEach(([a,b])=>{if(!points[a]||!points[b])return;ctx.beginPath();ctx.moveTo(points[a].x,points[a].y);ctx.lineTo(points[b].x,points[b].y);ctx.stroke();});
+    ctx.restore();
+  }
+
+  if(emphasis){
+    ctx.fillStyle=style==="hologram"?"rgba(80,229,242,.7)":"rgba(255,255,255,.62)";
+    for(let i=0;i<points.length;i+=6){
+      const p=points[i];if(!p)continue;
+      ctx.beginPath();ctx.arc(p.x,p.y,1.05,0,Math.PI*2);ctx.fill();
+    }
+  }
+  if(style==="scanner"){
+    const ys=points.map(p=>p.y), minY=Math.min(...ys),maxY=Math.max(...ys);
+    const sweep=minY+((performance.now()%1800)/1800)*(maxY-minY);
+    ctx.save();ctx.strokeStyle="#b5ffef";ctx.lineWidth=1.6;ctx.shadowColor="#50e5f2";ctx.shadowBlur=12;
+    ctx.beginPath();ctx.moveTo(Math.min(...points.map(p=>p.x)),sweep);ctx.lineTo(Math.max(...points.map(p=>p.x)),sweep);ctx.stroke();ctx.restore();
+  }
+  ctx.restore();
+  drawFaceFrame(points,emphasis,color);
+}
+function drawFaceFrame(points,emphasis=true,color="#f7fbff"){
+  const xs=points.map(p=>p.x),ys=points.map(p=>p.y);
+  const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
+  const padX=(maxX-minX)*.09,padY=(maxY-minY)*.10;
+  const x=clamp(minX-padX,5,canvas.width-5),y=clamp(minY-padY,5,canvas.height-5);
+  const w=clamp(maxX-minX+padX*2,5,canvas.width-x-5),h=clamp(maxY-minY+padY*2,5,canvas.height-y-5);
+  ctx.save();
+  ctx.strokeStyle=emphasis?color+"dd":color+"55";
+  ctx.lineWidth=emphasis?1.5:1;
+  if(emphasis){ctx.shadowColor=color;ctx.shadowBlur=8;}
+  // Corner brackets mimic an AR scanner frame.
+  const c=Math.min(30,w*.14,h*.14);
+  [[x,y,1,1],[x+w,y,-1,1],[x,y+h,1,-1],[x+w,y+h,-1,-1]].forEach(([cx,cy,sx,sy])=>{
+    ctx.beginPath();ctx.moveTo(cx+sx*c,cy);ctx.lineTo(cx,cy);ctx.lineTo(cx,cy+sy*c);ctx.stroke();
+  });
+  ctx.fillStyle="rgba(255,255,255,.86)";
+  ctx.font="10px ui-monospace,monospace";
+  ctx.fillText("FACE TRACK // ACTIVE",x+5,Math.max(12,y-7));
+  ctx.restore();
+}
+
+/* ============================================================
+   8. HAND SKELETON AND AR EFFECTS
+   ============================================================ */
+function drawHandSkeleton(points,index,gesture){
+  const color=COLORS[index%COLORS.length],coords=points.map(transformPoint);
+  const effect=$("gestureMode").value==="manual"?$("manualEffect").value:"skeleton";
+  if(["skeleton","neon","trail","face","particles","scanner"].includes(effect)){
+    ctx.save();
+    ctx.strokeStyle=color;ctx.lineWidth=effect==="neon"?3.8:2.4;ctx.lineCap="round";ctx.lineJoin="round";
+    if($("glowToggle").checked){ctx.shadowColor=color;ctx.shadowBlur=effect==="neon"?16:7;}
+    CONNECTIONS.forEach(([a,b])=>{ctx.beginPath();ctx.moveTo(coords[a].x,coords[a].y);ctx.lineTo(coords[b].x,coords[b].y);ctx.stroke();});
+    ctx.restore();
+  }
+  if($("landmarkToggle").checked||effect==="stars"){
+    coords.forEach((p,i)=>{
+      ctx.save();
+      ctx.fillStyle=color;
+      if(effect==="stars"){ctx.shadowColor=color;ctx.shadowBlur=9;}
+      ctx.beginPath();ctx.arc(p.x,p.y,i%4===0?3.7:2.1,0,Math.PI*2);ctx.fill();
+      ctx.restore();
+    });
+  }
+  if($("labelToggle").checked){
+    const label=`${gesture.name} · ${Math.round((state.handResults?.multiHandedness?.[index]?.classification?.[0]?.score??.8)*100)}%`;
+    drawPill(coords[0].x+7,coords[0].y+15,label,color);
+  }
+  if($("gestureMode").value==="auto"){
+    if(gesture.pinch)drawPinchFrame(coords,color);
+    if(gesture.peace)drawPeaceEffect(coords[8],color);
+    if(gesture.fist)drawPulse(coords[0],color);
+    if(gesture.thumbsUp)spawnAndDrawParticles(coords[4],color);
+    if(gesture.openPalm&&state.handResults?.multiHandLandmarks?.length===1)drawPalmHud(coords,color);
+  }
+  if($("gestureMode").value==="manual"){
+    const manual=$("manualEffect").value;
+    if(manual==="pinch")drawPinchFrame(coords,color);
+    if(manual==="scanner")drawPalmHud(coords,color);
+    if(manual==="particles")spawnAndDrawParticles(coords[8],color);
+    if(manual==="trail")drawTrail(coords[8],index,color);
+  }
+}
+function drawPill(x,y,text,color){
+  ctx.save();ctx.font="700 11px system-ui,sans-serif";
+  const width=ctx.measureText(text).width+16,h=23;
+  x=clamp(x,4,canvas.width-width-4);y=clamp(y,4,canvas.height-h-4);
+  ctx.fillStyle="#070b16df";ctx.strokeStyle=color;ctx.lineWidth=1;
+  roundedRect(x,y,width,h,6);ctx.fill();ctx.stroke();
+  ctx.fillStyle="#fff";ctx.fillText(text,x+8,y+15);ctx.restore();
+}
+function roundedRect(x,y,w,h,r){
+  ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
+}
+function drawPinchFrame(points,color){
+  const a=points[4],b=points[8],cx=(a.x+b.x)/2,cy=(a.y+b.y)/2;
+  const size=clamp(dist(a,b)*4+40,45,130);
+  ctx.save();ctx.strokeStyle=color;ctx.lineWidth=2;ctx.shadowColor=color;ctx.shadowBlur=14;
+  const x=cx-size/2,y=cy-size/2,c=size*.22;
+  [[x,y,1,1],[x+size,y,-1,1],[x,y+size,1,-1],[x+size,y+size,-1,-1]].forEach(([px,py,sx,sy])=>{
+    ctx.beginPath();ctx.moveTo(px+sx*c,py);ctx.lineTo(px,py);ctx.lineTo(px,py+sy*c);ctx.stroke();
+  });
+  ctx.restore();drawPill(cx-size/2,cy+size/2+5,"MAGIC FRAME",color);
+}
+function drawPeaceEffect(point,color){
+  ctx.save();ctx.strokeStyle=color;ctx.lineWidth=3;ctx.shadowColor=color;ctx.shadowBlur=18;
+  for(let i=0;i<3;i++){ctx.beginPath();ctx.arc(point.x,point.y,12+i*9+(performance.now()/80%8),-.8,Math.PI*1.35);ctx.stroke();}
+  ctx.restore();
+  drawTrail(point,0,color);
+}
+function drawPulse(point,color){
+  const phase=(performance.now()%1100)/1100;
+  ctx.save();ctx.strokeStyle=color;ctx.lineWidth=2;ctx.shadowColor=color;ctx.shadowBlur=12;
+  for(let i=0;i<3;i++){const radius=14+((phase+i/3)%1)*52;ctx.globalAlpha=1-((phase+i/3)%1);ctx.beginPath();ctx.arc(point.x,point.y,radius,0,Math.PI*2);ctx.stroke();}
+  ctx.restore();
+}
+function drawPalmHud(points,color){
+  const center=points[9];
+  ctx.save();ctx.strokeStyle=color;ctx.lineWidth=1.3;ctx.shadowColor=color;ctx.shadowBlur=10;
+  ctx.beginPath();ctx.arc(center.x,center.y,48,0,Math.PI*2);ctx.stroke();
+  ctx.beginPath();ctx.arc(center.x,center.y,58,performance.now()/700,performance.now()/700+Math.PI*1.1);ctx.stroke();
+  for(let a=0;a<8;a++){const angle=a*Math.PI/4;ctx.beginPath();ctx.moveTo(center.x+Math.cos(angle)*42,center.y+Math.sin(angle)*42);ctx.lineTo(center.x+Math.cos(angle)*51,center.y+Math.sin(angle)*51);ctx.stroke();}
+  ctx.restore();drawPill(center.x-42,center.y+65,"PALM SCAN",color);
+}
+function drawTrail(point,index,color){
+  const trail=state.trails[index]||(state.trails[index]=[]);
+  const max=Number($("trailRange").value);
+  if(max<=0)return;
+  trail.push({x:point.x,y:point.y});
+  while(trail.length>max)trail.shift();
+  ctx.save();
+  for(let i=1;i<trail.length;i++){
+    ctx.globalAlpha=i/trail.length*.6;ctx.strokeStyle=color;ctx.lineWidth=1+i/trail.length*4;
+    ctx.beginPath();ctx.moveTo(trail[i-1].x,trail[i-1].y);ctx.lineTo(trail[i].x,trail[i].y);ctx.stroke();
+  }
+  ctx.restore();
+}
+function spawnAndDrawParticles(point,color){
+  if(state.particles.length<30){
+    for(let i=0;i<3;i++)state.particles.push({x:point.x,y:point.y,vx:(Math.random()-.5)*2.8,vy:-Math.random()*2.5-0.3,life:1,color});
+  }
+}
+function updateParticles(){
+  ctx.save();
+  state.particles=state.particles.filter(p=>p.life>.04);
+  state.particles.forEach(p=>{
+    p.x+=p.vx;p.y+=p.vy;p.life-=.025;p.vy+=.015;
+    ctx.globalAlpha=Math.max(0,p.life);ctx.fillStyle=p.color;ctx.shadowColor=p.color;ctx.shadowBlur=8;
+    ctx.beginPath();ctx.arc(p.x,p.y,2+3*p.life,0,Math.PI*2);ctx.fill();
+  });
+  ctx.restore();
+}
+function drawGuide(){
+  if(!$("guideToggle").checked)return;
+  ctx.save();ctx.strokeStyle="#ffffff20";ctx.lineWidth=1;
+  for(let i=1;i<4;i++){const x=canvas.width*i/4,y=canvas.height*i/4;ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,canvas.height);ctx.stroke();ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(canvas.width,y);ctx.stroke();}
+  ctx.restore();
+}
+
+/* ============================================================
+   9. CURRENT SCENE: AUTOMATIC GESTURE -> FILTER EFFECT
+   ============================================================ */
+function renderAR(hands,active){
+  const gestureMode=$("gestureMode").value;
+  const faces=state.faceResults?.multiFaceLandmarks||[];
+  const twoOpen=hands.filter(h=>h.gesture.openPalm).length>=2;
+  const stableFace=state.stableGestureMode==="face";
+  const useFace=gestureMode==="manual"?$("manualEffect").value==="face":
+    gestureMode==="auto"&&stableFace&&twoOpen&&$("faceGestureToggle").checked;
+  if(useFace&&faces.length){
+    drawFaceMesh(faces[0],true);
+    // Bring a subtle connecting frame between the hands, like an AR capture window.
+    if(hands.length>=2)drawTwoHandFrame(hands);
+  }else if(gestureMode==="manual"&&$("manualEffect").value==="face"&&faces.length){
+    drawFaceMesh(faces[0],true);
+  }
+  if(gestureMode==="auto"&&stableFace&&!faces.length){
+    drawPill(canvas.width*.5-70,18,"FACE SEDANG DICARI", "#ffffff");
+  }
+  if(gestureMode==="manual"&&$("manualEffect").value==="scanner"&&faces.length){
+    drawFaceMesh(faces[0],false);
+  }
+  if(gestureMode==="manual"&&$("manualEffect").value==="stars"){
+    hands.forEach(h=>h.points.forEach((p,i)=>{const q=transformPoint(p);drawStar(q.x,q.y,3,COLORS[0]);}));
+  }
+  if(gestureMode==="manual"&&$("manualEffect").value==="particles"&&hands.length===0){
+    spawnAndDrawParticles({x:canvas.width/2,y:canvas.height/2},COLORS[2]);
+  }
+  updateParticles();
+}
+function drawTwoHandFrame(hands){
+  const centers=hands.slice(0,2).map(h=>transformPoint(h.points[9]));
+  const left=Math.min(centers[0].x,centers[1].x),right=Math.max(centers[0].x,centers[1].x);
+  const top=Math.max(8,Math.min(centers[0].y,centers[1].y)-canvas.height*.2);
+  const bottom=Math.min(canvas.height-8,Math.max(centers[0].y,centers[1].y)+canvas.height*.2);
+  if(right-left<canvas.width*.12)return;
+  ctx.save();ctx.strokeStyle="rgba(255,255,255,.42)";ctx.lineWidth=1;ctx.setLineDash([7,6]);
+  ctx.strokeRect(left,top,right-left,bottom-top);ctx.setLineDash([]);ctx.restore();
+}
+function drawStar(x,y,r,color){
+  ctx.save();ctx.fillStyle=color;ctx.shadowColor=color;ctx.shadowBlur=8;ctx.beginPath();
+  for(let i=0;i<10;i++){const angle=-Math.PI/2+i*Math.PI/5,rad=i%2?r*.45:r;const px=x+Math.cos(angle)*rad,py=y+Math.sin(angle)*rad;i?ctx.lineTo(px,py):ctx.moveTo(px,py);}
+  ctx.closePath();ctx.fill();ctx.restore();
+}
+
+/* ============================================================
+   10. HAND DASHBOARD + GESTURE LABELS
+   ============================================================ */
+function updateDashboard(hands,active){
+  const raw=state.handResults?.multiHandLandmarks||[];
+  const categories=state.handResults?.multiHandedness||[];
+  $("handCount").innerHTML=`${raw.length}<small> / 2</small>`;
+  const faces=state.faceResults?.multiFaceLandmarks||[];
+  $("faceCount").innerHTML=`${faces.length}<small> / 1</small>`;
+  $("gestureOverlay").textContent=active.label;
+  const avg=hands.length?hands.reduce((sum,h)=>sum+h.score,0)/hands.length:0;
+  $("qualityValue").innerHTML=`${hands.length?Math.round(avg*100):0}<small> %</small>`;
+  const list=$("handList");
+  if(!hands.length){
+    list.innerHTML='<div class="hand-item"><div class="hand-left"><div class="hand-icon">✋</div><div><div class="hand-name">Mencari tangan…</div><div class="hand-detail">Tunjukkan telapak tangan ke kamera</div></div></div><span class="hand-score" style="color:var(--muted)">SCAN</span></div>';
+  }else{
+    list.replaceChildren(...hands.map((h,index)=>{
+      const center=h.points[9],item=document.createElement("div");item.className="hand-item";
+      const left=document.createElement("div");left.className="hand-left";
+      const icon=document.createElement("div");icon.className="hand-icon";icon.textContent="✋";
+      const detail=document.createElement("div"),name=document.createElement("div"),sub=document.createElement("div");
+      name.className="hand-name";name.textContent=h.name;
+      sub.className="hand-detail";sub.textContent=`${h.gesture.name} · Posisi ${Math.round(center.x*100)}%, ${Math.round(center.y*100)}%`;
+      detail.append(name,sub);left.append(icon,detail);
+      const score=document.createElement("span");score.className="hand-score";score.textContent=`${Math.round(h.score*100)}% match`;
+      item.append(left,score);return item;
+    }));
+  }
+  if(raw.length!==state.lastHandCount){addHistory(raw.length?`${raw.length} tangan terdeteksi`:"Tangan tidak terdeteksi",raw.length?"LIVE":"SCAN");state.lastHandCount=raw.length;}
+  if(active.label!==state.lastGesture){state.lastGesture=active.label;state.lastGestureChange=Date.now();addHistory("Efek berubah",active.label.replace("GESTURE: ",""));}
+}
+
+/* ============================================================
+   11. ASYNCHRONOUS INFERENCE LOOP
+   ============================================================ */
+async function runInference(now){
+  if(!state.running||state.inferenceBusy||!state.handsModel)return;
+  state.inferenceBusy=true;
+  const started=performance.now();
+  try{
+    await state.handsModel.send({image:video});
+    if(state.faceModel&&now-state.lastFaceInferAt>=state.faceInterval){
+      state.lastFaceInferAt=now;
+      await state.faceModel.send({image:video});
+    }
+  }catch(error){
+    console.warn("Inference error",error);
+    const time=Date.now();
+    if(!state.errorTimes.length||time-state.errorTimes[state.errorTimes.length-1]>5000){
+      state.errorTimes.push(time);notify("AI tracking mengalami gangguan. Periksa internet atau turunkan resolusi kamera.","error",4000);
+    }
+  }finally{
+    state.processMs=performance.now()-started;
+    state.inferenceBusy=false;
+  }
+}
+function renderLoop(now){
+  if(!state.running)return;
+  if(video.readyState>=2&&video.videoWidth>0){
+    if(canvas.width!==video.videoWidth||canvas.height!==video.videoHeight){
+      canvas.width=video.videoWidth;canvas.height=video.videoHeight;
+      $("resolutionLabel").textContent=`${canvas.width} × ${canvas.height}`;
+    }
+    drawCameraFrame();
+    drawGuide();
+    if(now>=state.nextInferenceAt&&!state.inferenceBusy){
+      state.nextInferenceAt=now+35;
+      runInference(now);
+    }
+    const hands=getGestureState();
+    const active=chooseActiveGesture(hands);
+    hands.forEach((hand,index)=>drawHandSkeleton(hand.points,index,hand.gesture));
+    renderAR(hands,active);
+    updateDashboard(hands,active);
+    state.frameCount++;
+    if(now-state.fpsStart>=1000){
+      $("fpsValue").innerHTML=`${Math.round(state.frameCount*1000/(now-state.fpsStart))}<small> fps</small>`;
+      state.frameCount=0;state.fpsStart=now;
+    }
+  }
+  state.raf=requestAnimationFrame(renderLoop);
+}
+
+/* ============================================================
+   12. PHOTOS AND VIDEO RECORDING
+   ============================================================ */
+function fileStamp(prefix,ext){
+  const d=new Date(),z=n=>String(n).padStart(2,"0");
+  return `${prefix}-${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}-${z(d.getHours())}-${z(d.getMinutes())}-${z(d.getSeconds())}.${ext}`;
+}
+function saveBlob(blob,filename){
+  const url=URL.createObjectURL(blob),a=document.createElement("a");
+  a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),20000);
+}
+function takePhoto(){
+  if(!state.running){notify("Aktifkan kamera terlebih dahulu.");return;}
+  canvas.toBlob(blob=>{
+    if(!blob){notify("Browser gagal membuat foto. Coba lagi.","error");return;}
+    state.lastPhoto=blob;$("snapshotBtn").disabled=false;
+    saveBlob(blob,fileStamp("handtracking-ar","png"));
+    addHistory("Foto disimpan","PNG");notify("Foto PNG berhasil dibuat.","ok",2500);
+  },"image/png");
+}
+function downloadPhoto(){
+  if(state.lastPhoto)saveBlob(state.lastPhoto,fileStamp("handtracking-snapshot","png"));
+}
+function startRecording(){
+  if(!state.running){notify("Aktifkan kamera sebelum merekam.");return;}
+  if(!canvas.captureStream||!window.MediaRecorder){notify("Browser ini tidak mendukung perekaman WebM. Coba Chrome atau Edge terbaru.","error");return;}
+  try{
+    state.chunks=[];
+    state.recorderStream=canvas.captureStream(30);
+    const types=["video/webm;codecs=vp9","video/webm;codecs=vp8","video/webm"];
+    const mime=types.find(t=>MediaRecorder.isTypeSupported(t));
+    state.recorder=new MediaRecorder(state.recorderStream,mime?{mimeType:mime}:undefined);
+    state.recorder.ondataavailable=e=>{if(e.data&&e.data.size)state.chunks.push(e.data);};
+    state.recorder.onerror=e=>notify("Rekaman gagal: "+(e.error?.message||"kesalahan browser"),"error");
+    state.recorder.onstop=()=>{
+      const blob=new Blob(state.chunks,{type:state.recorder?.mimeType||"video/webm"});
+      if(blob.size){
+        if(state.lastVideoUrl)URL.revokeObjectURL(state.lastVideoUrl);
+        state.lastVideoUrl=URL.createObjectURL(blob);$("saveVideoBtn").disabled=false;
+        addHistory("Rekaman siap",`${Math.round(blob.size/1024)} KB`);
+        notify("Video siap. Klik Simpan Video untuk mengunduh.","ok");
+      }else notify("Rekaman kosong. Coba rekam kembali.","error");
+      state.recording=false;$("recordBtn").textContent="● Rekam";$("recordBtn").classList.remove("danger");
+      state.recorderStream?.getTracks().forEach(t=>t.stop());state.recorderStream=null;
+    };
+    state.recorder.start(300);state.recording=true;
+    $("recordBtn").textContent="■ Stop Rekam";$("recordBtn").classList.add("danger");$("saveVideoBtn").disabled=true;
+    addHistory("Rekaman dimulai","REC");notify("Sedang merekam. Tekan tombol Stop Rekam jika selesai.","ok",2500);
+  }catch(error){console.error(error);notify("Tidak dapat memulai rekaman: "+error.message,"error");}
+}
+function stopRecording(){
+  if(state.recorder&&state.recording){try{state.recorder.stop();}catch(error){console.warn(error);}}
+}
+function saveVideo(){
+  if(!state.lastVideoUrl)return;
+  const a=document.createElement("a");a.href=state.lastVideoUrl;a.download=fileStamp("handtracking-ar","webm");
+  document.body.appendChild(a);a.click();a.remove();
+}
+
+/* ============================================================
+   13. CSV EXPORT, FULLSCREEN, AND HELP
+   ============================================================ */
+function exportHistory(){
+  const rows=[["Waktu ISO","Aktivitas","Detail"],...state.history.slice().reverse().map(r=>[r.time.toISOString(),r.message,r.value])];
+  const csv=rows.map(row=>row.map(value=>`"${String(value).replace(/"/g,'""')}"`).join(",")).join("\r\n");
+  saveBlob(new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"}),fileStamp("handtracking-history","csv"));
+  addHistory("Riwayat diekspor","CSV");
+}
+async function fullscreen(){
+  try{if(!document.fullscreenElement)await $("viewCanvas").requestFullscreen();else await document.exitFullscreen();}
+  catch(error){notify("Mode layar penuh tidak tersedia di browser ini.","error");}
+}
+function help(){
+  notify("CARA PAKAI: (1) Aktifkan Kamera dan klik Allow. (2) Untuk efek pada wajah seperti contoh, pilih mode Otomatis, tampilkan wajah di tengah, buka kedua telapak tangan lebar-lebar di kiri dan kanan wajah. (3) Jaga kedua telapak tetap terlihat. (4) Pinch = rapatkan ujung ibu jari dan telunjuk; Peace = telunjuk+jari tengah terbuka; kepalan = semua jari menekuk; jempol naik = ibu jari tegak. (5) Gunakan manual effect jika ingin memaksa efek tanpa gestur. Wajah tetap harus terlihat agar Face Mesh dapat ditemukan.", "info");
+}
+function resetSettings(){
+  Object.entries(DEFAULTS).forEach(([id,value])=>{
+    const el=$(id);if(!el)return;
+    if(el.type==="checkbox")el.checked=value;else el.value=value;
+  });
+  updateRangeLabels();state.smooth=[];state.trails=[];addHistory("Pengaturan direset","RESET");
+  updateModelConfidence();
+}
+
+/* ============================================================
+   14. EVENTS AND SAFE CLEANUP
+   ============================================================ */
+function bindEvents(){
+  $("startBtn").addEventListener("click",startCamera);
+  $("stopBtn").addEventListener("click",stopCamera);
+  $("photoBtn").addEventListener("click",takePhoto);
+  $("recordBtn").addEventListener("click",()=>state.recording?stopRecording():startRecording());
+  $("saveVideoBtn").addEventListener("click",saveVideo);
+  $("snapshotBtn").addEventListener("click",downloadPhoto);
+  $("cameraSelect").addEventListener("focus",enumerateCameras);
+  $("cameraSelect").addEventListener("change",async()=>{if(state.running){await stopCamera();await startCamera();}});
+  $("resolutionSelect").addEventListener("change",async()=>{if(state.running){await stopCamera();await startCamera();}});
+  $("confidenceRange").addEventListener("input",updateRangeLabels);
+  $("confidenceRange").addEventListener("change",updateModelConfidence);
+  ["smoothRange","trailRange"].forEach(id=>$(id).addEventListener("input",updateRangeLabels));
+  $("resetSettingsBtn").addEventListener("click",resetSettings);
+  $("fullscreenBtn").addEventListener("click",fullscreen);
+  $("exportCsvBtn").addEventListener("click",exportHistory);
+  $("helpBtn").addEventListener("click",help);
+  $("clearHistoryBtn").addEventListener("click",()=>{state.history=[];renderHistory();});
+  $("gestureMode").addEventListener("change",()=>addHistory("Mode efek", $("gestureMode").selectedOptions[0].textContent));
+  $("manualEffect").addEventListener("change",()=>addHistory("Efek manual", $("manualEffect").selectedOptions[0].textContent));
+  $("faceStyle").addEventListener("change",()=>addHistory("Gaya face overlay",$("faceStyle").selectedOptions[0].textContent));
+  document.addEventListener("keydown",event=>{
+    if(["INPUT","SELECT","TEXTAREA"].includes(event.target?.tagName)||event.ctrlKey||event.altKey||event.metaKey)return;
+    if(event.code==="Space"){event.preventDefault();state.running?stopCamera():startCamera();}
+    else if(event.key.toLowerCase()==="p"&&state.running)takePhoto();
+    else if(event.key.toLowerCase()==="r"&&state.running)state.recording?stopRecording():startRecording();
+    else if(event.key.toLowerCase()==="f")fullscreen();
+  });
+  window.addEventListener("beforeunload",()=>{
+    state.stream?.getTracks().forEach(t=>t.stop());
+    if(state.recording){try{state.recorder.stop();}catch(_){}}
+    if(state.recorderStream)state.recorderStream.getTracks().forEach(t=>t.stop());
+    if(state.lastVideoUrl)URL.revokeObjectURL(state.lastVideoUrl);
+  });
+}
+
+/* ============================================================
+   15. INITIALIZATION
+   ============================================================ */
+async function init(){
+  bindEvents();updateRangeLabels();renderHistory();await enumerateCameras();
+  if(!window.isSecureContext&&location.hostname!=="localhost"&&location.hostname!=="127.0.0.1")
+    notify("Koneksi tidak secure. Akses kamera memerlukan HTTPS atau localhost.","error");
+  if(typeof window.Hands!=="function"){
+    $("modelStatus").textContent="MediaPipe belum termuat";
+    notify("MediaPipe belum termuat. Periksa koneksi internet/CDN dan refresh halaman.","error");
+  }else if(typeof window.FaceMesh!=="function"){
+    $("modelStatus").textContent="Tangan siap; Face Mesh tidak termuat";
+    notify("Library Face Mesh belum termuat. Tracking tangan masih bisa digunakan, tetapi overlay wajah mungkin tidak tersedia.","error");
+  }else $("modelStatus").textContent="Siap memulai";
+}
+init().catch(error=>{console.error(error);notify("Inisialisasi gagal: "+error.message,"error");});
+</script>
+</body>
+</html>
