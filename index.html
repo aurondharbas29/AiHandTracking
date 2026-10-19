@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#090d18">
+  <title>HandTrackingAI — Real-time Hand Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #090d18; --panel: #111827; --panel2: #151f31; --line: #263248;
+      --text: #f3f6ff; --muted: #93a0b7; --accent: #7c5cff; --cyan: #48dff0;
+      --green: #5ce0a0; --red: #ff657a; --radius: 18px;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: radial-gradient(ellipse at 15% 0%, #1c1740 0, transparent 42%), var(--bg); color: var(--text); font-family: "DM Sans", sans-serif; }
+    button, select { font: inherit; }
+    button { cursor: pointer; }
+    .shell { max-width: 1500px; margin: auto; padding: 24px; }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 26px; }
+    .brand { display: flex; align-items: center; gap: 13px; }
+    .logo { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 15px; background: linear-gradient(135deg, var(--accent), #21c5d8); box-shadow: 0 8px 30px #6752ff38; font-size: 25px; }
+    h1,h2,h3,p { margin-top: 0; }
+    h1 { font: 700 clamp(21px, 3vw, 30px)/1.15 "Space Grotesk", sans-serif; margin-bottom: 4px; letter-spacing: -.8px; }
+    .sub { color: var(--muted); font-size: 13px; }
+    .header-right { display: flex; gap: 10px; align-items: center; }
+    .pill { border: 1px solid var(--line); border-radius: 99px; padding: 9px 13px; color: var(--muted); font-size: 12px; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+    .dot { width: 8px; height: 8px; background: #68748a; border-radius: 50%; }
+    .dot.live { background: var(--green); box-shadow: 0 0 12px #5ce0a0a0; }
+    .layout { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(300px, .85fr); gap: 20px; align-items: start; }
+    .card { background: linear-gradient(160deg, #141d2d, #101624); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; box-shadow: 0 16px 50px #0000001a; }
+    .card-head { padding: 17px 20px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+    .card-head h2 { margin: 0; font: 600 16px "Space Grotesk", sans-serif; }
+    .tiny { font-size: 12px; color: var(--muted); }
+    .stage { position: relative; background: #050810; aspect-ratio: 16/10; min-height: 300px; overflow: hidden; }
+    #video { display: none; }
+    #output { display: block; width: 100%; height: 100%; object-fit: contain; }
+    .empty { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; padding: 20px; background: radial-gradient(ellipse, #171c37 0, #070a12 70%); }
+    .empty-icon { font-size: 54px; margin-bottom: 12px; }
+    .empty strong { font: 600 20px "Space Grotesk", sans-serif; margin-bottom: 8px; }
+    .empty span { color: var(--muted); font-size: 13px; max-width: 330px; line-height: 1.6; }
+    .stage-badge { position: absolute; top: 14px; left: 14px; background: #080c16cc; border: 1px solid #ffffff20; padding: 8px 10px; border-radius: 10px; font-size: 11px; backdrop-filter: blur(8px); display: flex; align-items: center; gap: 8px; }
+    .stage-badge.right { left: auto; right: 14px; }
+    .stage-bottom { position: absolute; bottom: 14px; left: 14px; right: 14px; display: flex; justify-content: space-between; gap: 8px; pointer-events: none; }
+    .stage-bottom span { background: #080c16c9; border: 1px solid #ffffff1c; padding: 7px 10px; border-radius: 9px; font-size: 11px; color: #d9e0f0; }
+    .toolbar { padding: 15px 18px; display: flex; flex-wrap: wrap; gap: 9px; border-top: 1px solid var(--line); }
+    .btn { border: 1px solid var(--line); color: var(--text); background: #1a2436; padding: 10px 14px; border-radius: 11px; font-size: 12px; font-weight: 700; transition: .18s; }
+    .btn:hover { transform: translateY(-1px); border-color: #65739a; }
+    .btn.primary { border-color: transparent; background: linear-gradient(135deg, var(--accent), #5a76ff); }
+    .btn.danger { color: #ff9aa8; border-color: #5c2938; background: #2a1723; }
+    .btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+    .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 15px 18px 18px; }
+    .stat { padding: 14px; border: 1px solid var(--line); border-radius: 13px; background: #0c1220; }
+    .stat .label { color: var(--muted); font-size: 11px; margin-bottom: 8px; }
+    .stat .value { font: 700 25px "Space Grotesk", sans-serif; }
+    .stat .unit { color: var(--muted); font-size: 11px; margin-left: 4px; }
+    .side { display: grid; gap: 18px; }
+    .controls { padding: 18px; display: grid; gap: 17px; }
+    .field { display: grid; gap: 8px; }
+    .field label, .field-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: #dbe2f2; font-size: 12px; font-weight: 700; }
+    select { width: 100%; background: #0c1321; border: 1px solid var(--line); color: var(--text); border-radius: 10px; padding: 11px 12px; outline: none; }
+    select:focus { border-color: var(--accent); }
+    .toggle-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #2632488c; font-size: 12px; color: #d7deed; }
+    .toggle-row:last-child { border-bottom: 0; }
+    input[type=checkbox] { accent-color: var(--accent); width: 17px; height: 17px; }
+    input[type=range] { width: 100%; accent-color: var(--accent); }
+    .range-meta { display: flex; justify-content: space-between; color: var(--muted); font-size: 11px; }
+    .hint { color: var(--muted); font-size: 11px; line-height: 1.6; }
+    .hand-list { padding: 14px 18px 18px; display: grid; gap: 9px; }
+    .hand-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border: 1px solid var(--line); background: #0c1321; border-radius: 12px; font-size: 12px; }
+    .hand-name { display: flex; align-items: center; gap: 10px; }
+    .hand-icon { width: 30px; height: 30px; display: grid; place-items: center; background: #29224d; border-radius: 9px; }
+    .hand-item small { display: block; color: var(--muted); margin-top: 3px; }
+    .status { color: var(--green); font-size: 11px; }
+    .footer { padding: 18px 2px 4px; color: #75819a; font-size: 11px; line-height: 1.7; text-align: center; }
+    .notice { margin: 0 18px 18px; padding: 12px 13px; background: #261d13; border: 1px solid #51402a; color: #f0c88a; border-radius: 11px; font-size: 11px; line-height: 1.5; display: none; }
+    .notice.show { display: block; }
+    @media (max-width: 980px) { .layout { grid-template-columns: 1fr; } .side { grid-template-columns: repeat(2, minmax(0,1fr)); } .side .card:first-child { grid-row: span 2; } }
+    @media (max-width: 640px) { .shell { padding: 14px; } header { align-items: flex-start; } .header-right .pill { display: none; } .side { grid-template-columns: 1fr; } .side .card:first-child { grid-row: auto; } .stage { min-height: 240px; aspect-ratio: 4/3; } .stats { padding: 10px; gap: 7px; } .stat { padding: 10px; } .stat .value { font-size: 20px; } .toolbar { padding: 12px; } .btn { flex: 1; } }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div class="brand">
+        <div class="logo">✋</div>
+        <div><h1>HandTrackingAI</h1><div class="sub">REAL-TIME HAND TRACKING STUDIO</div></div>
+      </div>
+      <div class="header-right">
+        <div class="pill"><span class="dot" id="headerDot"></span><span id="headerStatus">Kamera belum aktif</span></div>
+        <div class="pill">✦ MediaPipe Vision</div>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="card">
+        <div class="card-head">
+          <h2>Live Camera Studio</h2>
+          <span class="tiny" id="modelStatus">Model menunggu kamera</span>
+        </div>
+        <div class="stage">
+          <video id="video" playsinline muted></video>
+          <canvas id="output"></canvas>
+          <div class="empty" id="emptyState">
+            <div class="empty-icon">🖐️</div>
+            <strong>Siap mendeteksi tangan?</strong>
+            <span>Aktifkan kamera, izinkan akses browser, lalu letakkan tangan di depan kamera.</span>
+          </div>
+          <div class="stage-badge"><span class="dot" id="stageDot"></span><span id="stageStatus">STANDBY</span></div>
+          <div class="stage-badge right">AI VISION <span style="color:var(--cyan)">●</span></div>
+          <div class="stage-bottom"><span id="handOverlayLabel">0 tangan terdeteksi</span><span id="resolutionLabel">— × —</span></div>
+        </div>
+        <div class="toolbar">
+          <button class="btn primary" id="startBtn">▶ Aktifkan Kamera</button>
+          <button class="btn" id="stopBtn" disabled>■ Matikan</button>
+          <button class="btn" id="photoBtn" disabled>📸 Ambil Foto</button>
+          <button class="btn" id="recordBtn" disabled>● Rekam</button>
+          <button class="btn danger" id="downloadBtn" disabled>↓ Simpan Video</button>
+        </div>
+        <div class="stats">
+          <div class="stat"><div class="label">FPS PROSES</div><div class="value" id="fpsValue">0<span class="unit">fps</span></div></div>
+          <div class="stat"><div class="label">TANGAN</div><div class="value" id="handsValue">0<span class="unit">/ 2</span></div></div>
+          <div class="stat"><div class="label">KUALITAS TRACKING</div><div class="value" id="qualityValue">—<span class="unit">%</span></div></div>
+        </div>
+        <div class="notice" id="notice"></div>
+      </section>
+
+      <aside class="side">
+        <section class="card">
+          <div class="card-head"><h2>Pengaturan Kamera</h2><span class="tiny">01 / SETUP</span></div>
+          <div class="controls">
+            <div class="field"><label for="cameraSelect">Perangkat kamera</label><select id="cameraSelect"><option value="">Kamera default</option></select></div>
+            <div class="field"><label for="resolutionSelect">Resolusi kamera</label><select id="resolutionSelect"><option value="640x480">640 × 480 (Seimbang)</option><option value="1280x720">1280 × 720 (HD)</option><option value="1920x1080">1920 × 1080 (Full HD)</option></select></div>
+            <div class="field"><label for="filterSelect">Filter gambar</label><select id="filterSelect"><option value="none">Normal</option><option value="grayscale">Grayscale</option><option value="sepia">Sepia</option><option value="vintage">Vintage</option><option value="cool">Cool Blue</option><option value="warm">Warm Glow</option><option value="invert">Negative</option></select></div>
+            <div class="field"><label for="effectSelect">Efek visual</label><select id="effectSelect"><option value="skeleton">Skeleton Tracking</option><option value="neon">Neon Glow</option><option value="stars">Star Points</option><option value="minimal">Minimal Points</option><option value="none">Tanpa overlay</option></select></div>
+            <div class="field"><div class="field-title"><label for="smoothRange">Stabilisasi tracking</label><span id="smoothLabel">65%</span></div><input id="smoothRange" type="range" min="0" max="95" value="65"><div class="range-meta"><span>Responsif</span><span>Lebih halus</span></div></div>
+            <div class="field"><div class="field-title"><label for="confidenceRange">Ambang deteksi</label><span id="confidenceLabel">55%</span></div><input id="confidenceRange" type="range" min="20" max="90" value="55"><div class="range-meta"><span>Lebih sensitif</span><span>Lebih selektif</span></div></div>
+            <div>
+              <div class="toggle-row"><span>Mirror kamera</span><input type="checkbox" id="mirrorToggle" checked></div>
+              <div class="toggle-row"><span>Tampilkan landmark</span><input type="checkbox" id="landmarkToggle" checked></div>
+              <div class="toggle-row"><span>Tampilkan label tangan</span><input type="checkbox" id="labelToggle" checked></div>
+            </div>
+          </div>
+        </section>
+        <section class="card">
+          <div class="card-head"><h2>Analitik Tangan</h2><span class="tiny">02 / LIVE DATA</span></div>
+          <div class="hand-list" id="handList"><div class="hand-item"><div class="hand-name"><div class="hand-icon">✋</div><div>Belum ada data<small>Aktifkan kamera untuk mulai</small></div></div><span class="status">IDLE</span></div></div>
+        </section>
+        <section class="card">
+          <div class="card-head"><h2>Quick Tips</h2><span class="tiny">03 / GUIDE</span></div>
+          <div class="controls" style="gap:10px">
+            <div class="hint">✦ Pastikan pencahayaan cukup dan tangan terlihat utuh.</div>
+            <div class="hint">✦ Jaga jarak tangan sekitar 30–100 cm dari kamera.</div>
+            <div class="hint">✦ Jika tracking tersendat, pilih resolusi 640 × 480.</div>
+            <div class="hint">✦ Foto disimpan sebagai PNG; rekaman tersedia dalam format WebM.</div>
+            <div class="hint">✦ Video kamera diproses di browser. Model AI dimuat dari CDN saat aplikasi digunakan.</div>
+          </div>
+        </section>
+      </aside>
+    </main>
+    <div class="footer">HANDTRACKINGAI WEB • Dibangun dengan MediaPipe Tasks Vision • Untuk pengalaman terbaik gunakan Chrome / Edge terbaru melalui HTTPS.</div>
+  </div>
+
+  <script type="module">
+    import { FilesetResolver, HandLandmarker, DrawingUtils } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22";
+
+    const $ = (id) => document.getElementById(id);
+    const video = $("video"), canvas = $("output"), ctx = canvas.getContext("2d");
+    let handLandmarker = null, stream = null, rafId = null, running = false;
+    let lastVideoTime = -1, lastFrameAt = 0, fps = 0, frameCount = 0, fpsWindowAt = performance.now();
+    let recorder = null, recordedChunks = [], recording = false;
+    let smoothHistory = [], lastLandmarks = [], lastHands = 0;
+    const connections = HandLandmarker.HAND_CONNECTIONS;
+
+    function setNotice(message, show=true) {
+      const n = $("notice"); n.textContent = message; n.classList.toggle("show", show);
+    }
+    function setStatus(active, text) {
+      $("headerDot").classList.toggle("live", active);
+      $("stageDot").classList.toggle("live", active);
+      $("headerStatus").textContent = text;
+      $("stageStatus").textContent = active ? "LIVE TRACKING" : "STANDBY";
+    }
+    function updateButtonState(active) {
+      $("startBtn").disabled = active;
+      $("stopBtn").disabled = !active;
+      $("photoBtn").disabled = !active;
+      $("recordBtn").disabled = !active;
+      $("cameraSelect").disabled = active;
+      $("resolutionSelect").disabled = active;
+    }
+    async function loadModel() {
+      if (handLandmarker) return handLandmarker;
+      $("modelStatus").textContent = "Memuat model AI…";
+      const vision = await FilesetResolver.forVisionTasks("https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22/wasm");
+      handLandmarker = await HandLandmarker.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath: "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
+          delegate: "GPU"
+        },
+        runningMode: "VIDEO",
+        numHands: 2,
+        minHandDetectionConfidence: Number($("confidenceRange").value) / 100,
+        minHandPresenceConfidence: Number($("confidenceRange").value) / 100,
+        minTrackingConfidence: Math.max(0.2, Number($("confidenceRange").value) / 100)
+      });
+      $("modelStatus").textContent = "Model AI siap";
+      return handLandmarker;
+    }
+    async function listCameras() {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const cameras = devices.filter(d => d.kind === "videoinput");
+        const select = $("cameraSelect");
+        const previous = select.value;
+        select.innerHTML = '<option value="">Kamera default</option>';
+        cameras.forEach((camera, i) => {
+          const option = document.createElement("option");
+          option.value = camera.deviceId;
+          option.textContent = camera.label || `Kamera ${i + 1}`;
+          select.appendChild(option);
+        });
+        if (previous) select.value = previous;
+      } catch (e) { /* permission may not be granted yet */ }
+    }
+    async function startCamera() {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setNotice("Browser ini tidak mendukung kamera. Coba Chrome atau Edge terbaru melalui HTTPS.");
+        return;
+      }
+      try {
+        $("startBtn").disabled = true;
+        setNotice("Meminta izin kamera…");
+        const [w, h] = $("resolutionSelect").value.split("x").map(Number);
+        const deviceId = $("cameraSelect").value;
+        const videoConstraints = { width: { ideal: w }, height: { ideal: h }, frameRate: { ideal: 30, max: 60 } };
+        if (deviceId) videoConstraints.deviceId = { exact: deviceId };
+        stream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints, audio: false });
+        video.srcObject = stream;
+        await video.play();
+        await listCameras();
+        await loadModel();
+        canvas.width = video.videoWidth || w; canvas.height = video.videoHeight || h;
+        $("resolutionLabel").textContent = `${canvas.width} × ${canvas.height}`;
+        $("emptyState").style.display = "none";
+        running = true; lastVideoTime = -1; lastFrameAt = 0; smoothHistory = [];
+        updateButtonState(true); setStatus(true, "Kamera aktif"); setNotice("", false);
+        $("modelStatus").textContent = "Melacak landmark";
+        rafId = requestAnimationFrame(renderLoop);
+      } catch (error) {
+        stopCamera(false);
+        let msg = "Kamera gagal diaktifkan.";
+        if (error.name === "NotAllowedError") msg = "Akses kamera ditolak. Izinkan Camera pada pengaturan browser lalu coba lagi.";
+        else if (error.name === "NotFoundError") msg = "Kamera tidak ditemukan. Sambungkan webcam atau pilih perangkat yang tersedia.";
+        else if (error.name === "NotReadableError") msg = "Kamera sedang digunakan aplikasi lain. Tutup aplikasi tersebut lalu coba lagi.";
+        else msg += " " + (error.message || error.name);
+        setNotice(msg); $("startBtn").disabled = false;
+      }
+    }
+    function stopCamera(resetMessage=true) {
+      running = false;
+      if (rafId) cancelAnimationFrame(rafId);
+      rafId = null;
+      if (stream) stream.getTracks().forEach(track => track.stop());
+      stream = null; video.srcObject = null;
+      if (recording) stopRecording();
+      updateButtonState(false); setStatus(false, "Kamera belum aktif");
+      $("emptyState").style.display = "grid";
+      $("modelStatus").textContent = "Model menunggu kamera";
+      $("fpsValue").innerHTML = '0<span class="unit">fps</span>';
+      $("handsValue").innerHTML = '0<span class="unit">/ 2</span>';
+      $("qualityValue").innerHTML = '—<span class="unit">%</span>';
+      $("handOverlayLabel").textContent = "0 tangan terdeteksi";
+      $("handList").innerHTML = '<div class="hand-item"><div class="hand-name"><div class="hand-icon">✋</div><div>Belum ada data<small>Aktifkan kamera untuk mulai</small></div></div><span class="status">IDLE</span></div>';
+      if (resetMessage) setNotice("", false);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+    function applyFilter(imageData, type) {
+      const d = imageData.data;
+      for (let i=0; i<d.length; i+=4) {
+        const r=d[i], g=d[i+1], b=d[i+2];
+        if (type === "grayscale") { const v=.299*r+.587*g+.114*b; d[i]=d[i+1]=d[i+2]=v; }
+        else if (type === "sepia" || type === "vintage") {
+          d[i]=Math.min(255,.393*r+.769*g+.189*b);
+          d[i+1]=Math.min(255,.349*r+.686*g+.168*b);
+          d[i+2]=Math.min(255,.272*r+.534*g+.131*b);
+          if (type==="vintage") { d[i]*=.9; d[i+1]*=.86; d[i+2]*=.72; }
+        } else if (type === "cool") { d[i]=r*.88; d[i+1]=Math.min(255,g*1.02); d[i+2]=Math.min(255,b*1.18+7); }
+        else if (type === "warm") { d[i]=Math.min(255,r*1.12+8); d[i+1]=g*1.02; d[i+2]=b*.88; }
+        else if (type === "invert") { d[i]=255-r; d[i+1]=255-g; d[i+2]=255-b; }
+      }
+      return imageData;
+    }
+    function smoothLandmarks(landmarks, handIndex) {
+      const amount = Number($("smoothRange").value)/100;
+      const alpha = 1 - amount * .88;
+      const previous = smoothHistory[handIndex];
+      const out = landmarks.map((p, i) => {
+        if (!previous || !previous[i]) return {x:p.x,y:p.y,z:p.z};
+        return {x: previous[i].x*(1-alpha)+p.x*alpha, y: previous[i].y*(1-alpha)+p.y*alpha, z: previous[i].z*(1-alpha)+p.z*alpha};
+      });
+      smoothHistory[handIndex] = out;
+      return out;
+    }
+    function drawHand(points, index, handedness, confidence) {
+      const effect = $("effectSelect").value;
+      const color = index === 0 ? "#51e8ff" : "#ff6fe4";
+      const point = p => ({x: p.x*canvas.width, y: p.y*canvas.height});
+      if (effect === "skeleton" || effect === "neon") {
+        ctx.save();
+        ctx.lineCap = "round"; ctx.lineJoin = "round";
+        ctx.strokeStyle = effect === "neon" ? color : color;
+        ctx.lineWidth = effect === "neon" ? 5 : 3;
+        if (effect === "neon") { ctx.shadowColor=color; ctx.shadowBlur=18; }
+        for (const [a,b] of connections) {
+          if (!points[a] || !points[b]) continue;
+          const pa=point(points[a]), pb=point(points[b]);
+          ctx.beginPath(); ctx.moveTo(pa.x,pa.y); ctx.lineTo(pb.x,pb.y); ctx.stroke();
+        }
+        ctx.restore();
+      }
+      if ($("landmarkToggle").checked || effect === "stars" || effect === "minimal") {
+        points.forEach((p,i) => {
+          const q=point(p);
+          ctx.save();
+          if (effect === "stars") {
+            ctx.fillStyle = color; ctx.shadowColor=color; ctx.shadowBlur=10;
+            ctx.beginPath(); ctx.arc(q.x,q.y,i%4===0?5:2.6,0,Math.PI*2); ctx.fill();
+          } else if (effect === "minimal" || effect === "none") {
+            ctx.fillStyle = color; ctx.beginPath(); ctx.arc(q.x,q.y, i%4===0?3.5:2,0,Math.PI*2); ctx.fill();
+          } else {
+            ctx.fillStyle = "#ffffff"; ctx.strokeStyle=color; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(q.x,q.y,3.2,0,Math.PI*2); ctx.fill(); ctx.stroke();
+          }
+          ctx.restore();
+        });
+      }
+      if ($("labelToggle").checked) {
+        const wrist = point(points[0]);
+        ctx.save(); ctx.font = "700 13px DM Sans, sans-serif";
+        const label = `${handedness} · ${Math.round(confidence*100)}%`;
+        const width = ctx.measureText(label).width+18;
+        ctx.fillStyle = "#080c16d9"; ctx.strokeStyle = color; ctx.lineWidth=1;
+        ctx.beginPath(); ctx.roundRect(wrist.x-5,wrist.y+12,width,28,7); ctx.fill(); ctx.stroke();
+        ctx.fillStyle="#f4f7ff"; ctx.fillText(label,wrist.x+4,wrist.y+30);
+        ctx.restore();
+      }
+    }
+    function renderLoop(now) {
+      if (!running) return;
+      if (video.readyState >= 2 && video.currentTime !== lastVideoTime) {
+        lastVideoTime = video.currentTime;
+        const w=canvas.width, h=canvas.height;
+        ctx.save();
+        if ($("mirrorToggle").checked) { ctx.translate(w,0); ctx.scale(-1,1); }
+        ctx.drawImage(video,0,0,w,h);
+        ctx.restore();
+        const filter = $("filterSelect").value;
+        if (filter !== "none") {
+          try { const pixels=ctx.getImageData(0,0,w,h); ctx.putImageData(applyFilter(pixels,filter),0,0); } catch(e) {}
+        }
+        try {
+          const results = handLandmarker.detectForVideo(video, now);
+          const hands = results.landmarks || [];
+          const handed = results.handedness || [];
+          lastLandmarks = []; let totalConfidence=0;
+          smoothHistory = smoothHistory.slice(0,hands.length);
+          hands.forEach((raw,i) => {
+            const points=smoothLandmarks(raw,i);
+            lastLandmarks.push(points);
+            const category=handed[i]?.[0];
+            const name=category?.categoryName || `Tangan ${i+1}`;
+            const score=category?.score ?? .8;
+            totalConfidence += score;
+            // Canvas is mirrored, so flip x-coordinates when mirror mode is enabled.
+            const drawable = $("mirrorToggle").checked ? points.map(p=>({...p,x:1-p.x})) : points;
+            drawHand(drawable,i,name,score);
+          });
+          const count=hands.length;
+          $("handsValue").innerHTML = `${count}<span class="unit">/ 2</span>`;
+          $("handOverlayLabel").textContent = `${count} tangan terdeteksi`;
+          $("qualityValue").innerHTML = `${count?Math.round(totalConfidence/count*100):0}<span class="unit">%</span>`;
+          updateHandList(hands,handed);
+          lastHands=count;
+        } catch(error) {
+          $("modelStatus").textContent = "Deteksi belum siap";
+        }
+        frameCount++;
+        if (now-fpsWindowAt>=1000) {
+          fps= Math.round(frameCount*1000/(now-fpsWindowAt));
+          $("fpsValue").innerHTML = `${fps}<span class="unit">fps</span>`;
+          frameCount=0; fpsWindowAt=now;
+        }
+      }
+      rafId=requestAnimationFrame(renderLoop);
+    }
+    function updateHandList(hands, handed) {
+      if (!hands.length) {
+        $("handList").innerHTML = '<div class="hand-item"><div class="hand-name"><div class="hand-icon">✋</div><div>Tidak ada tangan<small>Letakkan tangan dalam area kamera</small></div></div><span class="status" style="color:var(--muted)">SEARCHING</span></div>';
+        return;
+      }
+      $("handList").innerHTML = hands.map((landmarks,i)=>{
+        const cat=handed[i]?.[0], name=cat?.categoryName || `Tangan ${i+1}`, score=cat?.score ?? .8;
+        const wrist=landmarks[0] || {x:0,y:0};
+        return `<div class="hand-item"><div class="hand-name"><div class="hand-icon">✋</div><div>${name}<small>Posisi: ${Math.round(wrist.x*100)}%, ${Math.round(wrist.y*100)}%</small></div></div><span class="status">${Math.round(score*100)}% match</span></div>`;
+      }).join("");
+    }
+    function capturePhoto() {
+      if (!running) return;
+      const link=document.createElement("a");
+      link.download=`handtracking-${new Date().toISOString().replace(/[:.]/g,"-")}.png`;
+      link.href=canvas.toDataURL("image/png"); link.click();
+      setNotice("Foto berhasil disiapkan untuk diunduh.", true);
+      setTimeout(()=>setNotice("",false),2200);
+    }
+    function startRecording() {
+      if (!running) return;
+      try {
+        const mime = ["video/webm;codecs=vp9","video/webm;codecs=vp8","video/webm"].find(t=>MediaRecorder.isTypeSupported(t)) || "";
+        recordedChunks=[];
+        const streamOut=canvas.captureStream(30);
+        recorder = new MediaRecorder(streamOut, mime ? {mimeType:mime} : {});
+        recorder.ondataavailable=e=>{ if(e.data && e.data.size) recordedChunks.push(e.data); };
+        recorder.onstop=()=>{
+          const blob=new Blob(recordedChunks,{type:recorder?.mimeType || "video/webm"});
+          const url=URL.createObjectURL(blob);
+          $("downloadBtn").disabled=false;
+          $("downloadBtn").onclick=()=>{
+            const a=document.createElement("a"); a.href=url; a.download=`handtracking-recording-${Date.now()}.webm`; a.click();
+            setTimeout(()=>URL.revokeObjectURL(url),30000);
+          };
+          setNotice("Rekaman siap disimpan. Tekan tombol “Simpan Video”.",true);
+        };
+        recorder.start(300); recording=true;
+        $("recordBtn").textContent="■ Stop Rekam"; $("recordBtn").classList.add("danger");
+        $("downloadBtn").disabled=true;
+      } catch(e) { setNotice("Perekaman tidak tersedia di browser ini: "+e.message); }
+    }
+    function stopRecording() {
+      if (recorder && recording) { recording=false; recorder.stop(); }
+      $("recordBtn").textContent="● Rekam"; $("recordBtn").classList.remove("danger");
+    }
+
+    $("startBtn").addEventListener("click", startCamera);
+    $("stopBtn").addEventListener("click", ()=>stopCamera());
+    $("photoBtn").addEventListener("click", capturePhoto);
+    $("recordBtn").addEventListener("click", ()=>recording ? stopRecording() : startRecording());
+    $("smoothRange").addEventListener("input",()=> $("smoothLabel").textContent=$("smoothRange").value+"%");
+    $("confidenceRange").addEventListener("input",()=> $("confidenceLabel").textContent=$("confidenceRange").value+"%");
+    $("cameraSelect").addEventListener("focus",listCameras);
+    $("cameraSelect").addEventListener("change",()=>{ if(running){stopCamera();startCamera();} });
+    $("resolutionSelect").addEventListener("change",()=>{ if(running){stopCamera();startCamera();} });
+    window.addEventListener("beforeunload",()=>{ if(stream) stream.getTracks().forEach(t=>t.stop()); });
+    listCameras();
+  </script>
+</body>
+</html>
